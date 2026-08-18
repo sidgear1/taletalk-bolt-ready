@@ -459,11 +459,80 @@ function WorldMapSection({ onMenu, startMapLoaded, onStartNewGame, onOpenMemory,
     nameSlot(creatingSlot, fileName.trim(), avatar);
     onSelectSaveSlot(creatingSlot);
     setCreatingSlot(null);
+    setSaveSlots(listSlots());
     onStartNewGame();
   };
   const readAvatar = (file: File | undefined) => { if (!file) return; const reader = new FileReader(); reader.onload = () => setAvatar(String(reader.result)); reader.readAsDataURL(file); };
 
-  if (!mapLoaded) return <div className="save-select-screen"><img className="save-select-bg" src={HOME_BACKGROUNDS[0]} alt="" /><div className="save-select-shade" /><main className="save-select-card"><p className="save-select-label">Data List</p><h1>Select data to load</h1><div className="save-select-list">{saveSlots.map(file => <div key={file.slot} className={`save-file-row ${file.slot === activeSaveSlot ? 'active' : ''}`}>{file.name ? <><button className="save-file-load" onClick={() => chooseSaveFile(file)}>{file.avatar ? <img src={file.avatar} className="save-avatar-image" alt="" /> : <span className={`save-avatar save-avatar-${file.slot}`}>{file.name.slice(0, 2).toUpperCase()}</span>}<span><strong>{file.name}</strong><small>Last scene · {file.phase ?? 'Opening scene'}</small></span><span className="save-file-time">Play time<br /><b>{file.updatedAt ? 'In progress' : '00:00'}</b></span></button><button className="save-file-delete" onClick={() => setDeletingSlot({ slot: file.slot, name: file.name! })} aria-label={`Delete ${file.name}`}><X size={17} /></button></> : <button className="save-file-new" onClick={() => chooseSaveFile(file)}><span className="save-avatar">+</span><span><strong>Create a new story</strong><small>Empty save file {file.slot}</small></span></button>}</div>)}</div><button className="save-select-menu" onClick={onMenu}>Back to menu</button>{creatingSlot !== null && <div className="save-form"><h2>Create a new story</h2><input value={fileName} onChange={event => setFileName(event.target.value)} placeholder="File name" autoFocus /><label>Choose avatar photo<input type="file" accept="image/*" onChange={event => readAvatar(event.target.files?.[0])} /></label>{avatar && <img src={avatar} className="save-avatar-preview" alt="Avatar preview" />}<div><button onClick={() => setCreatingSlot(null)}>Cancel</button><button onClick={createSaveFile}>Start adventure</button></div></div>}{deletingSlot && <div className="save-form"><h2>Delete {deletingSlot.name}?</h2><p>Type the file name to confirm.</p><input autoFocus placeholder={deletingSlot.name} onChange={event => { if (event.target.value === deletingSlot.name) { removeSlot(deletingSlot.slot); setSaveSlots(listSlots()); setDeletingSlot(null); } }} /><button onClick={() => setDeletingSlot(null)}>Cancel</button></div>}</main></div>;
+  if (!mapLoaded) return (
+    <div className="save-select-screen">
+      <img className="save-select-bg" src={HOME_BACKGROUNDS[0]} alt="" />
+      <div className="save-select-shade" />
+      <main className="save-select-card">
+        <p className="save-select-label">{isChinese ? '存档列表' : 'Data List'}</p>
+        <h1>{isChinese ? '选择存档' : 'Select data to load'}</h1>
+        <p>{isChinese ? '选择一个已有存档继续旅程，或创建一个新故事。' : 'Choose an existing save file to continue your journey, or create a new story.'}</p>
+        <div className="save-select-list">
+          {saveSlots.map(file => (
+            <div key={file.slot} className={`save-file-row ${file.slot === activeSaveSlot ? 'active' : ''}`}>
+              {file.name ? (
+                <>
+                  <button className="save-file-load" onClick={() => chooseSaveFile(file)}>
+                    {file.avatar
+                      ? <img src={file.avatar} className="save-avatar-image" alt="" />
+                      : <span className={`save-avatar save-avatar-${file.slot}`}>{file.name.slice(0, 2).toUpperCase()}</span>}
+                    <span>
+                      <strong>{file.name}</strong>
+                      <small>{isChinese ? '最后场景 · ' : 'Last scene · '}{file.phase ?? (isChinese ? '开场' : 'Opening scene')}</small>
+                    </span>
+                    <span className="save-file-time">{isChinese ? '游戏时间' : 'Play time'}<br /><b>{file.updatedAt ? (isChinese ? '进行中' : 'In progress') : '00:00'}</b></span>
+                  </button>
+                  <button className="save-file-delete" onClick={() => setDeletingSlot({ slot: file.slot, name: file.name! })} aria-label={`Delete ${file.name}`}>
+                    <X size={16} />
+                  </button>
+                </>
+              ) : (
+                <button className="save-file-new" onClick={() => chooseSaveFile(file)}>
+                  <span className="save-empty-icon">+</span>
+                  <span>
+                    <strong>{isChinese ? '创建新故事' : 'Create a new story'}</strong>
+                    <small>{isChinese ? `空存档 ${file.slot}` : `Empty save file ${file.slot}`}</small>
+                  </span>
+                </button>
+              )}
+            </div>
+          ))}
+        </div>
+        <button className="save-select-menu" onClick={onMenu}>{isChinese ? '返回菜单' : 'Back to menu'}</button>
+
+        {creatingSlot !== null && (
+          <div className="save-form">
+            <h2>{isChinese ? '创建新故事' : 'Create a new story'}</h2>
+            <p>{isChinese ? '为你的新冒险取一个名字。' : 'Give your new adventure a name.'}</p>
+            <label>{isChinese ? '存档名称' : 'File name'}</label>
+            <input type="text" value={fileName} onChange={event => setFileName(event.target.value)} placeholder={isChinese ? '输入名称…' : 'Enter a name…'} autoFocus onKeyDown={event => { if (event.key === 'Enter') createSaveFile(); }} />
+            <label>{isChinese ? '选择头像（可选）' : 'Choose avatar photo (optional)'}<input type="file" accept="image/*" onChange={event => readAvatar(event.target.files?.[0])} /></label>
+            {avatar && <img src={avatar} className="save-avatar-preview" alt="Avatar preview" />}
+            <div>
+              <button onClick={() => setCreatingSlot(null)}>{isChinese ? '取消' : 'Cancel'}</button>
+              <button onClick={createSaveFile} disabled={!fileName.trim()}>{isChinese ? '开始冒险' : 'Start adventure'}</button>
+            </div>
+          </div>
+        )}
+
+        {deletingSlot && (
+          <div className="save-form">
+            <h2>{isChinese ? `删除 ${deletingSlot.name}？` : `Delete ${deletingSlot.name}?`}</h2>
+            <p>{isChinese ? '输入存档名称以确认删除。' : 'Type the file name to confirm deletion.'}</p>
+            <input type="text" autoFocus placeholder={deletingSlot.name} onChange={event => { if (event.target.value === deletingSlot.name) { removeSlot(deletingSlot.slot); setSaveSlots(listSlots()); setDeletingSlot(null); } }} />
+            <div>
+              <button onClick={() => setDeletingSlot(null)}>{isChinese ? '取消' : 'Cancel'}</button>
+            </div>
+          </div>
+        )}
+      </main>
+    </div>
+  );
 
   return (
     <div
